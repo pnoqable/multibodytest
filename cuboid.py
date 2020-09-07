@@ -2,6 +2,8 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 # function that returns dy/dt
 # @njit( cache = True )
@@ -45,36 +47,31 @@ pE    = [ 1, 0, 0, 0 ]
 v0S0  = [ 0, 0, 7 ]
 om0KK = [ 0, 25, 0 ]
 om0KK = np.array( om0KK ) + np.max( om0KK ) / 100
-x0 = np.concatenate( ( r0S0, pE, v0S0, om0KK ) )
+y0 = np.concatenate( ( r0S0, pE, v0S0, om0KK ) )
 
 # solve ODE
-sol = solve_ivp( cuboid_dydt, ( 0, 1.5 ), x0, args = ( Theta, ThetaInv, grav0 ), dense_output = True )
-denseT = np.linspace( 0, 1.5, 1500 )
-denseY = sol.sol( denseT )
+ts = np.linspace( 0, 1.5, 151 )
+sol = solve_ivp( cuboid_dydt, ( 0, 1.5 ), y0, t_eval = ts, args = ( Theta, ThetaInv, grav0 ), dense_output = True )
 
-# plot results
-plt.plot( denseT, denseY[10:13].T, color = 'gray' )
-plt.plot( sol.t, sol.y[10], 'o', sol.t, sol.y[11], '^', sol.t, sol.y[12], '*' )
-plt.xlabel( '[s]' )
-plt.ylabel( '[RAD/s]' )
-plt.show()
+vertices = np.array( [[0,0,0],[0,0,c],[0,b,0],[0,b,c],
+                      [a,0,0],[a,0,c],[a,b,0],[a,b,c]], dtype = np.float_ )
+vertices -= np.mean( vertices, axis = 0 )
+indices = np.array( [[0,1,3,2],[4,5,7,6],
+                     [0,1,5,4],[2,3,7,6],
+                     [0,2,6,4],[1,3,7,5]], dtype = np.int_ )
 
-# plot 3d
+collection = Poly3DCollection( vertices[indices], edgecolor = "k" )
+
+figure = plt.figure()
 ax = plt.axes( projection = '3d' )
-max = np.abs( sol.y[10:13] ).max()
-ax.set_xlim([-max, max])
-ax.set_ylim([-max, max])
-ax.set_zlim([-max, max])
-ax.plot3D( denseY[10], denseY[11], denseY[12], 'gray' )
-ax.scatter3D( sol.y[10], sol.y[11], sol.y[12] );
-plt.show()
+ax.set_xlim([-0.2, 0.2])
+ax.set_ylim([-0.2, 0.2])
+ax.set_zlim([-0.2, 0.2])
+ax.add_collection3d( collection )
 
-# solve ODE
-sol = solve_ivp( cuboid_dydt, ( 0, 30 ), x0, args = ( Theta, ThetaInv, grav0 ) )
+def update( y ):
+    collection.set_verts( vertices.dot( quad_to_mat( y[3:7] )[0].T )[indices] )
 
-# plot results
-pEpE = np.sum( sol.y[3:7] * sol.y[3:7], axis = 0 )
-plt.plot( sol.t, 100 * pEpE - 100 )
-plt.xlabel('[s]')
-plt.ylabel('[%]')
+animation = FuncAnimation( figure, update, frames = sol.y.T, interval = 1 )
+
 plt.show()
