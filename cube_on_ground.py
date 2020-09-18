@@ -75,11 +75,11 @@ def quad_to_mat( pE ):
 
 cube = Cube()
 r0S0 = np.array( [0., 0., cube.size[2]] )
-pE = [1., 0., 0., 0.]
-v0S0 = [0.1, 0., 1.]
-om0KK = [5., 50., 30.]
+pE = [ 0.88807383,  0.32505758, -0.32505758,  0.        ]
+v0S0 = [0.01, 0., 0.5]
+om0KK = [110., 100., 100.]
 y0 = np.concatenate( ( r0S0, pE, v0S0, om0KK ) )
-fps = 4 * 20
+fps = 20 * 20
 ts = np.arange( 0.5 * fps ) / fps
 
 try:
